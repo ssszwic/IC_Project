@@ -1,0 +1,27 @@
+
+# 设置搜索目录，不包含子目录
+set_app_var search_path         "$search_path /home/IC/Work/Library"
+# 设置目标库
+set_app_var target_library      "smic18.db"
+# 设置链接库 *表示先搜寻内存中已有的库，包括通过 read 读进来的库
+set_app_var link_library        "* smic18.db"
+# 设置符号库
+set_app_var symbol_library      "smic18.sdb"
+
+set         RTL_PATH            $SYN_ROOT_PATH/RTL
+set         UNMAPPED_PATH       $SYN_ROOT_PATH/Syn/unmapped
+set         MAPPED_PATH         $SYN_ROOT_PATH/Syn/mapped
+set         SCRIPT_PATH         $SYN_ROOT_PATH/Syn/script
+set         REPORT_PATH         $SYN_ROOT_PATH/Syn/report
+set         WORK_PATH           $SYN_ROOT_PATH/Syn/work
+set         ANALYZE_PATH        $SYN_ROOT_PATH/Syn/analyze
+
+set_app_var search_path         [list . $search_path    $RTL_PATH       \
+                                        $UNMAPPED_PATH  $MAPPED_PATH    \
+                                        $SCRIPT_PATH    $REPORT_PATH    \
+                                        $REPORT_PATH    $WORK_PATH      \
+                                        $ANALYZE_PATH]
+
+# 新建一个设计库 ANALYZE 并且映射到目录 $ANALYZE_PATH 中
+# 用于存放 analyze 得到的中间文件
+define_design_lib ANALYZE -path $ANALYZE_PATH
