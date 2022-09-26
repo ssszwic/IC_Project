@@ -1,0 +1,27 @@
+snippet always_comp
+always@(*) begin
+    $0
+end
+endsnippet
+
+snippet always_ff
+always@(posedge sys_clk or negedge sys_rst_n) begin
+    if(~sys_rst_n) begin
+        $0
+	end
+end
+endsnippet
+
+snippet module
+module $0(
+    input                        sys_clk,
+	input                        sys_rst_n,
+);
+endsnippet
+
+snippet begin
+begin
+    $0
+end
+endsnippet
+
