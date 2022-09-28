@@ -1,8 +1,8 @@
 module Top(
     input                   sys_clk         ,
     input                   sys_rst_n       , 
-    input           [31:0]  data_in1        ,
-    input           [31:0]  data_in2        ,
+    input           [31:0]  data1_in        ,
+    input           [31:0]  data2_in        ,
     input           [1:0]   opcode          ,
     input                   trig            ,
 
@@ -24,6 +24,7 @@ wire                        plus_vld            ;
 wire            [31:0]      multi_result        ;
 wire            [31:0]      multi_unit_data1    ;
 wire            [31:0]      multi_unit_data2    ;
+wire                        multi_unit_trig     ;
 wire                        multi_trig          ;
 wire                        multi_vld           ;
 
@@ -31,6 +32,7 @@ wire                        multi_vld           ;
 wire            [31:0]      div_result          ;
 wire            [31:0]      div_unit_data1      ;
 wire            [31:0]      div_unit_data2      ;
+wire                        div_unit_trig       ;
 wire                        div_trig            ;
 wire                        div_vld             ;
 
@@ -119,8 +121,8 @@ Div Div_inst(
     .data2_in               (alu_data2              ),  // i 32b
     .data_out               (multi_result           ),  // o 32b
     // control                                  
-    .trig                   (multi_trig             ),  // i 1b
-    .vld                    (multi_vld              ),  // o 1b
+    .trig                   (div_trig               ),  // i 1b
+    .vld                    (div_vld                ),  // o 1b
     // MultiUnit control                        
     .mul_result_in          (unit_result            ),  // i 32b
     .mul_data1_out          (div_unit_data1         ),  // o 32b

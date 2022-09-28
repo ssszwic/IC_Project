@@ -53,7 +53,7 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
 	else if(cnt == 3'd0 && trig) begin
 		cnt <= 3'd1;
 	end
-	else if(cnt == 3'd0 || cnt == 3'd6) begin
+	else if(cnt == 3'd0 || cnt == 3'd7) begin
 		cnt <= 3'd0;
 	end
 	else begin
@@ -113,7 +113,7 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
 		dec1_1 <= 24'b0;
 		dec2_1 <= 24'b0;
 	end
-	else if(cnt == 3'd6 && trig) begin
+	else if(cnt == 3'd1) begin
 		dec1_1 <= (exp1 == 8'd0) ? 24'd0 : {1'b1, dec1};
 		dec2_1 <= (exp2 == 8'd0) ? 24'd0 : {1'b1, dec2};
 	end
@@ -127,7 +127,7 @@ end
 // step3: solve shift bit
 //////////////////////////////////////////////////////////////////
 
-assign shift_bit_comb = {1'b0, dec1} - {1'b0, dec2};
+assign shift_bit_comb = {1'b0, exp1} - {1'b0, exp2};
 
 always@(posedge sys_clk or negedge sys_rst_n) begin
 	if(~sys_rst_n) begin
@@ -275,10 +275,10 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
 	else begin
 		if(shift_flag) begin
 			dec1_2	<= 	{dec_tmp, protect};
-			dec2_2	<= 	{dec2_1, 2'd0};
+			dec2_2	<= 	{dec2_1, 3'd0};
 		end
 		else begin
-			dec1_2	<=	{dec1_1, 2'd0};
+			dec1_2	<=	{dec1_1, 3'd0};
 			dec2_2	<=	{dec_tmp, protect};
 		end
 	end
@@ -372,7 +372,7 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
 			c_exp <= exp_both;
 		end
 		else if(sum_abs[25]) begin
-			if((sum_abs[1:0] > 2'd2 || (sum_abs[1:0] == 2'd2 && sum_abs[2])) begin
+			if(sum_abs[1:0] > 2'd2 || (sum_abs[1:0] == 2'd2 && sum_abs[2])) begin
 				c_dec <= sum_abs[24:2] + 1;
 			end
 			else begin
@@ -385,7 +385,7 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
 				c_dec <= sum_abs[23:1] + 1;
 			end
 			else begin
-				c_dec <= sum_asb[23:1];
+				c_dec <= sum_abs[23:1];
 			end
 			c_exp <= exp_both - 2;
 		end
@@ -504,21 +504,21 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
 	else if(cnt == 3'd7) begin
 		// one of data1_in and data2_in is NaN
 		if((exp1 == 8'd255 && dec1 != 23'd0) || (exp2 == 8'd255 && dec2 != 23'd0)) begin
-			data_out <= {1'b0, 8'd255, {23{1'b1}}};
+			data_out <= {1'b1, 8'd255, {23{1'b1}}};
 		end
 		// data1_in is infinity
 		else if(exp1 == 8'd255 && dec1 == 23'd0) begin
 			// data2_in is infinity and the sign is oppsite 
 			if((exp2 == 8'd255 && dec2 == 23'd0) && (sign1 ^ (op_reg ^ sign2))) begin
-				data_out <= {1'b0, 8'd255, {23{1'b1}}};
+				data_out <= {1'b1, 8'd255, {23{1'b1}}};
 			end
 			else begin
-				data_out <= {sign1, exp1, dec1}
+				data_out <= {sign1, exp1, dec1};
 			end
 		end
 		// data2_in is infinity
 		else if(exp2 == 8'd255 && dec2 == 23'd0) begin
-			data_out <= {sign1 ^ (op_reg ^sign2), exp2, dec2};
+			data_out <= {sign1 ^ (op_reg ^ sign2), exp2, dec2};
 		end
 		// input normal
 		// result is 0

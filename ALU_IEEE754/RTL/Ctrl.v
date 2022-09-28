@@ -20,9 +20,9 @@ module Ctrl(
 	output	reg				multi_unit_sel	,	// decide who use mulitplication unit (multi or div) 0:multi  1:div
 	output	reg				sel_plus		,	// decide which module works
 	output	reg				sel_multi		,	
-	output	reg				sel_dev			,
+	output	reg				sel_div			,
 	output	reg				op_plus			,	// Plus module opcode
-	output	reg				work				// work status. When work is '1', module doesn't acciept external data.
+	output	reg				work			,   //  work status. When work is '1', module doesn't acciept external data.
 	output	reg				result_vld			// final result	vld
 );
 
@@ -51,7 +51,7 @@ end
 always@(*) begin
 	case(state)
 		IDLE: begin
-			if(trig) beign
+            if(trig) begin
 				case(opcode)
 					2'b00:	next_state	=	PLUS;
 					2'b01:	next_state	=	PLUS;
@@ -68,7 +68,6 @@ always@(*) begin
 		MULTI:	next_state	=	(multi_vld_in)	?	IDLE	:	MULTI;  
 		DIV:	next_state	=	(div_vld_in)	?	IDLE	:	DIV;
 		default:next_state 	=	IDLE;
-		end
 	endcase
 end
 
@@ -76,7 +75,7 @@ end
 // Output signal of calculate moduele
 ////////////////////////////////////////////////////////////
 
-always@(posedge sys_clk oe negedge sys_rst_n) begin
+always@(posedge sys_clk or negedge sys_rst_n) begin
 	if(~sys_rst_n) begin
 		sel_plus	<=	1'b0;
 		sel_multi	<=	1'b0;
@@ -88,7 +87,7 @@ always@(posedge sys_clk oe negedge sys_rst_n) begin
 	else if(state == IDLE && trig) begin
 		data1_out	<=	data1_in;
 		data2_out	<=	data2_in;
-		op_plus		<=	opcpde[0];
+		op_plus		<=	opcode[0];
 		
 		case(opcode)
 			2'b00:	{sel_plus, sel_multi, sel_div}	<=	3'b100;
@@ -98,7 +97,7 @@ always@(posedge sys_clk oe negedge sys_rst_n) begin
 			default:{sel_plus, sel_multi, sel_div}	<=	3'b000;
 		endcase
 	end
-	else beign
+	else begin
 		sel_plus	<=	1'b0;
 		sel_multi	<=	1'b0;
 		sel_div		<= 	1'b0;
@@ -141,12 +140,11 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
 	if(~sys_rst_n) begin
 		result_vld	<=	1'b0;		
 	end
+	else if(state != IDLE) begin
+		result_vld	<=	plus_vld_in | multi_vld_in | div_vld_in;
+    end
 	else begin
-		if(state != IDLE) begin
-			result_vld	<=	plus_vld_in | multi_vld_in | div_vld_in;
-		else begin
-			result_vld	<=	1'b0;
-		end
+		result_vld	<=	1'b0;
 	end
 end
 
