@@ -11,10 +11,11 @@ module Top(
     output                  work            
 );
 
-
-// Plus signal
+// Ctrl signal
 wire            [31:0]      alu_data1           ;
 wire            [31:0]      alu_data2           ;
+
+// Plus signal
 wire            [31:0]      plus_result         ;
 wire                        op_plus             ;
 wire                        plus_trig           ;
@@ -22,33 +23,25 @@ wire                        plus_vld            ;
 
 // Multi signal
 wire            [31:0]      multi_result        ;
-wire            [31:0]      multi_unit_data1    ;
-wire            [31:0]      multi_unit_data2    ;
+wire            [23:0]      multi_unit_data1    ;
+wire            [23:0]      multi_unit_data2    ;
 wire                        multi_unit_trig     ;
 wire                        multi_trig          ;
 wire                        multi_vld           ;
 
 // Div signal
 wire            [31:0]      div_result          ;
-wire            [31:0]      div_unit_data1      ;
-wire            [31:0]      div_unit_data2      ;
+wire            [23:0]      div_unit_data1      ;
+wire            [23:0]      div_unit_data2      ;
 wire                        div_unit_trig       ;
 wire                        div_trig            ;
 wire                        div_vld             ;
 
 // Multi Unit signal
-wire            [31:0]      unit_data1          ;
-wire            [31:0]      unit_data2          ;
-wire            [31:0]      unit_result         ;
+wire            [22:0]      unit_result         ;
+wire            [1:0]       unit_other          ;
 wire                        unit_trig           ;
 wire                        unit_vld            ;
-
-// Universal multiplier select signal
-wire                        multi_unit_sel      ;
-
-assign  unit_data1  =   (multi_unit_sel) ? div_unit_data1   :   multi_unit_data1;
-assign  unit_data2  =   (multi_unit_sel) ? div_unit_data2   :   multi_unit_data2;
-assign  unit_trig   =   (multi_unit_sel) ? div_unit_trig    :   multi_unit_trig;  
 
 Ctrl Ctrl_inst(
     // system signal
@@ -69,14 +62,14 @@ Ctrl Ctrl_inst(
     .plus_vld_in            (plus_vld               ),  // i 1b
     .multi_vld_in           (multi_vld              ),  // i 1b
     .div_vld_in             (div_vld                ),  // i 1b
-    .multi_unit_sel         (multi_unit_sel         ),  // o 1b
     .sel_plus               (plus_trig              ),  // o 1b
-    .sel_multi              (mult_trig              ),  // o 1b
+    .sel_multi              (multi_trig              ),  // o 1b
     .sel_div                (div_trig               ),  // o 1b
     .op_plus                (op_plus                ),  // o 1b
     .work                   (work                   ),  // o 1b
     .result_vld             (vld                    )   // o 1b
 );
+
 
 Plus Plus_inst(
     // system signal
@@ -92,6 +85,7 @@ Plus Plus_inst(
     .vld                    (plus_vld               )   // o 1b
 );
 
+
 Multi Multi_inst(
     // system signal                            
     .sys_clk                (sys_clk                ),  // i 1b
@@ -103,14 +97,16 @@ Multi Multi_inst(
     // control                                  
     .trig                   (multi_trig             ),  // i 1b
     .vld                    (multi_vld              ),  // o 1b
-    // MultiUnit control                        
-    .mul_result_in          (unit_result            ),  // i 32b
-    .mul_data1_out          (multi_unit_data1       ),  // o 32b
-    .mul_data2_out          (multi_unit_data2       ),  // o 32b
+    // cordic unit data flow                       
+    .cordic_result_in       (unit_result            ),  // i 23b
+    .cordic_other_in        (unit_other             ),  // i 2b
+    .cordic_data1_out       (multi_unit_data1       ),  // o 24b
+    .cordic_data2_out       (multi_unit_data2       ),  // o 24b
     // MultiUnit control
-    .mul_result_vld         (unit_vld               ),  // i 1b
-    .mul_trig_out           (multi_unit_trig        )   // o 1b
+    .cordic_result_vld      (unit_vld               ),  // i 1b
+    .cordic_trig_out        (multi_unit_trig        )   // o 1b
 );
+
 
 Div Div_inst(
     // system signal                            
@@ -119,30 +115,36 @@ Div Div_inst(
     // dataflow                                 
     .data1_in               (alu_data1              ),  // i 32b
     .data2_in               (alu_data2              ),  // i 32b
-    .data_out               (multi_result           ),  // o 32b
+    .data_out               (div_result             ),  // o 32b
     // control                                  
     .trig                   (div_trig               ),  // i 1b
     .vld                    (div_vld                ),  // o 1b
-    // MultiUnit control                        
-    .mul_result_in          (unit_result            ),  // i 32b
-    .mul_data1_out          (div_unit_data1         ),  // o 32b
-    .mul_data2_out          (div_unit_data2         ),  // o 32b
+    // cordic unit data flow                       
+    .cordic_result_in       (unit_result            ),  // i 23b
+    .cordic_other_in        (unit_other             ),  // i 2b
+    .cordic_data1_out       (div_unit_data1         ),  // o 24b
+    .cordic_data2_out       (div_unit_data2         ),  // o 24b
     // MultiUnit control
-    .mul_result_vld         (unit_vld               ),  // i 1b
-    .mul_trig_out           (div_unit_trig          )   // o 1b
+    .cordic_result_vld      (unit_vld               ),  // i 1b
+    .cordic_trig_out        (div_unit_trig          )   // o 1b
 );
 
-MultiUnit MultiUnit_inst(
+
+CordicUnit CordicUnit_inst(
+    // system signal
     .sys_clk                (sys_clk                ),  // i 1b
     .sys_rst_n              (sys_rst_n              ),  // i 1b
-    // dataflow
-    .data1_in               (unit_data1             ),  // i 32b
-    .data2_in               (unit_data2             ),  // i 32b
-    .data_out               (unit_result            ),  // o 32b
+    // data flow
+    .mul_data1_in           (multi_unit_data1       ),  // i 24b
+    .mul_data2_in           (multi_unit_data2       ),  // i 24b
+    .div_data1_in           (div_unit_data1         ),  // i 24b
+    .div_data2_in           (div_unit_data2         ),  // i 24b
+    .data_out               (unit_result            ),  // o 23b
+    .data_other             (unit_other             ),  // o 2b
     // control
-    .trig                   (unit_trig              ),  // i 1b
+    .mul_trig               (multi_unit_trig        ),  // i 1b
+    .div_trig               (div_unit_trig          ),  // i 1b
     .vld                    (unit_vld               )   // o 1b
 );
-
 
 endmodule

@@ -17,7 +17,6 @@ module Ctrl(
     input                   plus_vld_in     ,   // the calsulate result is vilid
     input                   multi_vld_in    ,
     input                   div_vld_in      ,
-    output  reg             multi_unit_sel  ,   // decide who use mulitplication unit (multi or div) 0:multi  1:div
     output  reg             sel_plus        ,   // decide which module works
     output  reg             sel_multi       ,   
     output  reg             sel_div         ,
@@ -149,25 +148,21 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
 end
 
 ////////////////////////////////////////////////////////////
-// 'work' and 'multi_unit_sel'
+// 'work' signal
 ////////////////////////////////////////////////////////////
 
 always@(posedge sys_clk or negedge sys_rst_n) begin
     if(~sys_rst_n) begin
         work            <=  1'b0;
-        multi_unit_sel  <=  1'b0;
     end
     else if(state == IDLE && trig) begin
         work            <=  1'b1;
-        multi_unit_sel  <=  opcode[0];
     end
     else if(state != IDLE && (plus_vld_in | multi_vld_in | div_vld_in)) begin
         work            <=  1'b0;
-        multi_unit_sel  <=  1'b0;
     end
     else begin
         work            <=  work;
-        multi_unit_sel  <=  multi_unit_sel;
     end
 end
 

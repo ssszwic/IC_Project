@@ -522,7 +522,7 @@ always@(posedge sys_clk or negedge sys_rst_n) begin
         end
         // input normal
         // result is 0
-        else if(c_exp < 0) begin
+        else if(c_exp <= 0) begin
             data_out <= {c_sign, 31'd0};
         end
         // result is infinity

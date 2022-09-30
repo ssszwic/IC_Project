@@ -13,13 +13,13 @@ wire                        work            ;
 
 int                         seed            ;
 int                         cnt             ;
-longint                     err             ;
+logic           [34:0]      err             ;
 
 shortreal                   a_real          ;
 shortreal                   b_real          ;
 shortreal                   c_real          ;
 
-logic           [31:0]      c_right         ;
+logic   signed  [31:0]      c_right         ;
 
 Top Top_inst(
 	.sys_clk				(sys_clk				),	// i 1b
@@ -81,7 +81,7 @@ initial begin
     end
 
     trig    =   1;
-    opcode  =   {$random(seed)} % 2; // unsigned { }  for $random%2 = {-1, 0, 1}
+    opcode  =   {$random(seed)} % 4; // unsigned { }  for $random%2 = {-1, 0, 1}
     a_real  =   $bitstoshortreal(a);
     b_real  =   $bitstoshortreal(b);
 
@@ -92,7 +92,7 @@ initial begin
     b       =   0;
     trig    =   0;
 
-    repeat(1e4) begin
+    repeat(1e5) begin
         // Prevent program death when vld = 1 forever.
         cnt = 0;
         while(cnt < 1000) begin
@@ -114,8 +114,14 @@ initial begin
                 if(c_right[30:23] == 8'd255 && c_right[22:0] != 8'd0) begin
                     c_right = {32{1'b1}};
                 end
+                else if (c_right[30:23] == 8'd0) begin
+                    c_right[22:0] = 23'd0;
+                end 
+                else begin
+                    c_right = c_right;
+                end
 
-                err = $abs(c_right - int'(c));
+                err = c_right - c;
                 
                 // next input
                 a       =   int'($random(seed));
@@ -130,7 +136,7 @@ initial begin
                 end
 
                 trig    =   1;
-                opcode  =   {$random(seed)} % 2;
+                opcode  =   {$random(seed)} % 4;
                 a_real  =   $bitstoshortreal(a);
                 b_real  =   $bitstoshortreal(b);
 
