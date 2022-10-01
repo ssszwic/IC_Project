@@ -39,3 +39,7 @@ cp ../../init/flow.tcl ./script
 # 修改 .synopsys_dc.setup 中的内容
 sed -i "1 i set         SYN_ROOT_PATH       ${DESIGN_DIR}" ./work/.synopsys_dc.setup
 cd ../
+
+# algorithm simulation
+mkdir Algorithm
+cp ../init/logic.py ./Algorithm/
