@@ -42,4 +42,4 @@ cd ../
 
 # algorithm simulation
 mkdir Algorithm
-cp ../init/logic.py ./Algorithm/
+cp ../init/VerilogTools.py ./Algorithm/
