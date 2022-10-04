@@ -42,8 +42,6 @@ def SinCosCordic(theta):
             x = x + tmp2
             y = y - tmp1
             z = z + math.atan(2**(-cnt))
-        print(x)
-        print(y)
 
 
     # reduction quadrant
@@ -73,48 +71,56 @@ def SinCosCordicFix(theta):
     # x, y extra bit
     exp = 3
     # z: 1+10+z_exp
+    # z: 23
     z_value = logic(11 + z_exp, signed=1, name='z')
     quadrand = logic(2, name='quadrand')
     if theta.dec > 768:
         # quadrand 4
         z_value.dec = 1024 - theta.dec
-        quadrand.dec = 0
+        quadrand.dec = 3
     elif theta.dec > 512:
         # quadrand 3
         z_value.dec = theta.dec - 512
-        quadrand.dec = 1
+        quadrand.dec = 2
     elif theta.dec > 256:
         # quadrand 2
         z_value.dec = 512 - theta.dec
-        quadrand.dec = 2
+        quadrand.dec = 1
     else:
         # quadrand 1
         z_value.dec = theta.dec
-        quadrand.dec = 3
+        quadrand.dec = 0
     # left shift z_exp
     z_value.bin = z_value[9:0].bin + z_exp * '0'
-
 
     # mapping
     delta = 2 * math.pi / (2**10)
 
     # 1+1+(itr - 1 + exp)
-    x_value = logic(1 + itr + exp, signed=1, name='x')
-    y_value = logic(1 + itr + exp, signed=1, name='y')
+    # 1+1+20
+    x_value = logic(itr + exp + 1, signed=1, name='x')
+    y_value = logic(itr + exp + 1, signed=1, name='y')
     # km fix point
-    km = round(0.60725293501 * (2**(itr - 1 + exp)))
+    # km = round(0.60725293501 * (2**(itr - 1 + exp)))
+    km = 636751
     x_value.dec = km
     y_value.dec = 0
 
+    # z_adds
+    z_adds = [524288, 309505, 163534, 83012, 41667, 20854, 10430, 
+    5215, 2608, 1304, 652, 326, 163, 81, 41, 20, 10, 5]
+
     # 1+1+(itr - 1 + exp)
-    tmp1 = logic(1 + itr + exp, signed=1, name='tmp1')
-    tmp2 = logic(1 + itr + exp, signed=1, name='tmp2')
+    # 1+1+20
+    tmp1 = logic(itr + exp + 1, signed=1, name='tmp1')
+    tmp2 = logic(itr + exp + 1, signed=1, name='tmp2')
     for cnt in range(0, itr):
         # right shift cnt bit
         tmp1.bin = x_value >> cnt
         tmp2.bin = y_value >> cnt
-        z_add = round((math.atan(2**(-cnt)) / delta) * (2**z_exp))
-        if z_value.dec > 0:
+        # z_add = round((math.atan(2**(-cnt)) / delta) * (2**z_exp))
+        z_add = z_adds[cnt]
+        if z_value.dec >= 0:
             x_value.dec = x_value.dec - tmp2.dec
             y_value.dec = y_value.dec + tmp1.dec
             z_value.dec = z_value.dec - z_add
@@ -122,21 +128,18 @@ def SinCosCordicFix(theta):
             x_value.dec = x_value.dec + tmp2.dec
             y_value.dec = y_value.dec - tmp1.dec
             z_value.dec = z_value.dec + z_add
-        # print('x: ', x_value.dec/(2**(itr - 1 + exp)))
-        # print('y: ', y_value.dec/(2**(itr - 1 + exp)))
-        
 
     # deduction quadrant
     # sin 1+1+11
     sin = logic(13, signed=1, name='sin')
     cos = logic(13, signed=1, name='cos')
-    if quadrand.dec == 0:
+    if quadrand.dec == 3:
         sin.dec = -y_value[itr + exp:itr + exp - 12].dec
         cos.dec = x_value[itr + exp:itr + exp - 12].dec
-    elif quadrand.dec == 1:
+    elif quadrand.dec == 2:
         sin.dec = -y_value[itr + exp:itr + exp - 12].dec
         cos.dec = -x_value[itr + exp:itr + exp - 12].dec
-    elif quadrand.dec == 2:
+    elif quadrand.dec == 1:
         sin.dec = y_value[itr + exp:itr + exp - 12].dec
         cos.dec = -x_value[itr + exp:itr + exp - 12].dec
     else:
@@ -151,6 +154,7 @@ if __name__ == '__main__':
     delta = 2 * math.pi / (2**10)
     theta = np.linspace(0, 2 * math.pi - delta, 2**10)
 
+
     sin = np.zeros(len(theta), dtype=np.float32)
     cos = np.zeros(len(theta), dtype=np.float32)
     sin_real = np.zeros(len(theta), dtype=np.float32)
@@ -159,9 +163,6 @@ if __name__ == '__main__':
     theta_logic = logic(10, name='theta_logic')
     sin_logic = logic(13, signed=1, name='sin_logic')
     cos_logic = logic(13, signed=1, name='cos_logic')
-
-    theta_logic.dec = 0
-    sin_logic, cos_logic = SinCosCordicFix(theta_logic)
 
     for i in range(len(theta)):
         theta_logic.dec = i
@@ -186,3 +187,4 @@ if __name__ == '__main__':
     plt.legend([L1, L2], ['sin', 'cos'], loc='upper right')
     plt.show()
     
+

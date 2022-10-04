@@ -1,0 +1,18 @@
+{signal: [
+    ['input',
+    {name: 'sys_clk', 			wave: 'p..............'},
+    {name: 'sys_rst_n', 		wave: '01.............'},
+    {name: 'trig', 			    wave: '0..10..........'},
+    {name: 'data_in[9:0]',		wave: 'xxx5x..........'},
+    ],
+    {name:	'cnt[4:0]',			wave: 'x.3.3333|333...', data: '0 1 2 3 4 18 19 0'},
+    {name: 'quadrand[1:0]',	    wave: 'x...4......x...'},
+    {name: 'x_value[21:0]', 	wave: 'x...5555|55x...', data: 'km x1 x2 x3 x17 x18'},
+    {name: 'y_value[21:0]', 	wave: 'x...5555|55x...', data: '0 y1 y2 y3 y17 y18'},
+    {name: 'z_value[22:0]', 	wave: 'x...5555|55x...', data: 'theta z1 z2 z3 z17 z18'},
+    ['output',
+    {name: 'sin[12:0]',		    wave: 'x..........8...', data: 'y18~'},
+    {name: 'cos[12:0]',		    wave: 'x..........8...', data: 'x18~'},
+    {name: 'vld',				wave: 'x..........10..', data: 'x18~'},
+    ]
+]}
