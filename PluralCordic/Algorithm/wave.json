@@ -1,0 +1,23 @@
+{signal: [
+     ['input',
+      {name: 'sys_clk', 			     wave: 'p................'},
+      {name: 'sys_rst_n', 			wave: '01...............'},
+      {name: 'trig', 				wave: '0..10............'},
+      {name: 're_in[8:0]',			wave: 'x..4x............'},
+      {name: 'im_in[8:0]', 			wave: 'x..4x............'},
+     ],
+      {name:	'cnt[]',			     wave: 'x.3.3333|33333...', data: '0 1 2 3 4 10 11 12 13 0'},
+      {name: 'x_value[18:0]', 		wave: 'x...5555|55x.....', data: 'x0 y1 y2 y3 y9 y10'},
+      {name: 'y_value[18:0]', 		wave: 'x...5555|55x.....', data: 'y0 y1 y2 y3 y9 y10'},
+      {name: 'z_value[13:0]', 		wave: 'x...5555|55x.....', data: '0 z1 z2 z3 z9 z10'},
+      {name: 'x_abs[17:0]',			wave: 'x..........6x....'},
+      {name: 'ampli_km[25:0]',		wave: 'x...........6x...'},
+      {name: 'theta_r1[13:0]',		wave: 'x..........7x....'},
+      {name: 'theta_r2[13:0]',	     wave: 'x...........7x...'},
+     ['output',
+      {name: 'ampli_out[8:0]',		wave: 'x............8...'},
+      {name: 'theta_out[9:0]',		wave: 'x............8...'},
+      {name: 'err',					wave: 'x............8...'},
+      {name: 'vld',					wave: '0............10..'},
+     ]
+]}
