@@ -3,3 +3,5 @@ Syn
 VCS
 .hdl_checker
 __pycache__
+out
+*.swp
