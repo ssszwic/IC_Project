@@ -25,5 +25,5 @@ vd:
 	verdi -sverilog +define+SVA -f asic.f -ssf tb.fsdb&
 
 clean:
-	rm simv *.fsdb novas* run* ucli.key
-	rm -r simv.daidir verdiLog csrc
+	-rm simv *.fsdb novas* run* ucli.key out
+	-rm -r simv.daidir verdiLog csrc

@@ -19,6 +19,7 @@ DESIGN_DIR=$(pwd) # 设计文件夹的路径
 # design files
 mkdir RTL
 mkdir Testbench
+mkdir Script
 
 # 建立仿真文件夹 VCS
 mkdir VCS

@@ -2,25 +2,33 @@
 
 import sys
 import argparse
+import re
 
 class ModulePort(object):
     def __init__(self):
-        self.note = '' # If note isn't empty, it is just a comment.
-        self.name = '' # Port name
+        self.name   = '' # Port name
         self.direct = '' # Port direction, include input, output and inout
-        self.length = 1 # Bit width
-        self.sign = 'unsigned' # signed or unsigned, default: unsigned
-        self.net = 'wire' # Net, wire or reg
+        self.width  = None  # Bit width None: depends on parameter
+        self.sign   = 'unsigned' # signed or unsigned, default: unsigned
+        self.net    = 'wire' # Net, wire or reg
 
-    def param_print(self):
-        if len(self.note) == 0:
-            print('name: ', self.name)
-            print('direct: ', self.direct)
-            print('length: ', self.length)
-            print('sign: ', self.sign)
-            print('net: ', self.net)
-        else:
-            print('note: ', self.note)
+    def print_info(self):
+        print('name: ', self.name)
+        print('direct: ', self.direct)
+        print('width: ', self.width)
+        print('sign: ', self.sign)
+        print('net: ', self.net)
+        print('')
+
+
+class ModuleParam(object):
+    def __init__(self):
+        self.name   = ''
+        self.value  = None # default value
+
+    def print_info(self):
+        print('name: ', self.name)
+        print('default: ', self.value)
         print('')
 
 
@@ -41,161 +49,179 @@ def SplitWord(line):
             word.append(s)  
     return words
 
+def del_single_comment(line):
+    m = re.search(r"//", line)
+    if m:
+        if m.start() == 0:
+            line = ''
+        else: 
+            line = line[0:m.start()-1]
+    else:
+        line = line;
+    return line
+
+# calculate port width and filter string
+def cal_port_width(line):
+    width = '1'
+    m = re.search(r"\[[^\]]*\]", line)
+    if m:
+        new_line = re.sub(r"\[[^\]]*\]", ' ', line)
+        width_string = m.group()
+        p = re.compile(r"\w+")
+        nums = p.findall(width_string)
+        width = width_string
+        if len(nums) == 2:
+            if nums[0].isdigit() and nums[1].isdigit():
+                width = str(abs(int(nums[0]) - int(nums[1])) + 1)
+    else:
+        new_line = line
+    return width, new_line
+
+def generate_inst(module_name, params, ports, fill=True, tab_num=4):
+    inst = ''
+    tab = 4*' '
+    # calculate longest string of name
+    max_len = 0;
+    for param in params:
+        max_len = len(param.name) if len(param.name) > max_len else max_len
+        max_len = len(param.value) if len(param.value) > max_len else max_len
+    for port in ports:
+        max_len = len(port.name) if len(port.name) > max_len else max_len
+    tab_len = (((max_len + 1) // 4) + 1) * 4
+    tab_len = max(tab_len, tab_num * 4)
+
+    inst += module_name + ' '
+    # params
+    if len(params) != 0:
+        inst += '#(\n'
+        for i in range(len(params)):
+            inst += tab + '.' + params[i].name + (tab_len - 1 - len(params[i].name)) * ' '
+            # fill default value
+            if fill:
+                inst += '(' + params[i].value + (tab_len - 1 - len(params[i].value)) * ' ' + ')' 
+            else:
+                inst += '(' + (tab_len - 1) * ' ' + ')'
+            if i == len(params) - 1:
+                # last param
+                inst += '\n) '
+            else:
+                inst += ',\n'
+    # port
+    assert(len(ports) != 0)
+    inst += module_name + '_ (\n'
+    for i in range(len(ports)):
+        inst += tab + '.' + ports[i].name + (tab_len - 1 - len(ports[i].name)) * ' '
+        # fill default value
+        if fill:
+            inst += '(' + ports[i].name + (tab_len - 1 - len(ports[i].name)) * ' ' + ')' 
+        else:
+            inst += '(' + (tab_len - 1) * ' ' + ')'
+        inst += ' ' if i == len(ports) - 1 else ','
+        # direct comment
+        inst += ' // '
+        if ports[i].direct == 'input':
+            inst += 'i'
+        elif ports[i].direct == 'output':
+            inst += 'o'
+        else:
+            inst += 'io'
+        # width comment
+        inst += ' ' + ports[i].width + 'b '
+        # signed comment
+        inst += 'signed\n' if ports[i].sign == 'signed' else '\n'
+        # last param 
+        if i == len(ports) - 1:
+            inst += ');'
+    return inst 
+    
+def detect_module(file_name):
+    module_name = ""
+    params = []
+    ports = []
+
+    # read file and delate comment
+    all_string = ''
+    fd = open(file_name)
+    for i in range(1000):
+        line = fd.readline().strip("\n")
+        # delate single comment
+        line = del_single_comment(line) 
+        if line != '':
+            all_string = all_string + ' ' + line
+    
+    # delate all comment
+    all_string = re.sub(r"/\*.*(\*/){0}.*\*/",' ', all_string)
+    
+    # find module body
+    m = re.search(r"module[^;]*;", all_string)
+    if m is None:
+        print("no matched module")
+        sys.exit(-1)
+    module_string = m.group()
+
+    # detect module name
+    m = re.search(r"module *[^ #(]*", module_string)
+    assert(m)
+    module_name = m.group().split()[1]
+
+    # detect parameter list
+    p = re.compile(r"[^ ,)]* *= *[^ ,)]*")
+    param_strings = p.findall(module_string)
+
+    for param_string in param_strings:
+        param = ModuleParam()
+        splits = re.split(r"[= ]*", param_string)
+        param.name = splits[0]
+        param.value = splits[1]
+        params.append(param)
+
+    # detect port body
+    m = re.search(r"\([^;\(]*\) *;", module_string)
+    assert(m)
+    port_body_string = m.group()
+
+    # detect port
+    p = re.compile(r"(input[^,\)]*|output[^,\)]*|inout[^,\)]*)")
+    port_strings = p.findall(port_body_string)
+    for port_string in port_strings:
+        port = ModulePort()
+        width, new_port_string = cal_port_width(port_string)
+        port.width = width
+        p = re.compile(r"\w+")
+        strings = p.findall(new_port_string)
+        # name
+        port.name = strings[-1]
+        # direct
+        port.direct = strings[0]
+        # net
+        if "reg" in strings:
+            port.net = "reg"
+        # sign
+        if "signed" in strings:
+            port.sign = "signed"
+        ports.append(port)
+
+    return module_name, params, ports
+
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()  
     parser.add_argument('module_file', help="The module design file.")
-    parser.add_argument('-p', '--port', help="Also instance port.", action='store_true')
-    parser.add_argument('-f', '--file', help="Save a instance file.", action='store_true')
-    parser.add_argument('-l', '--length', help="Tab length in brackets.", type=int, default='6')
+    parser.add_argument('-f', '--fill_port', help="Also fill port.", action='store_true')
+    parser.add_argument('-p', '--print_port', help="Print port info.", action='store_true')
+    parser.add_argument('-l', '--tab_num', help="Tab length in brackets.", type=int, default='4')
     args = parser.parse_args()
 
     file_name = args.module_file
-    fp = open(file_name, 'r')
-    ports = []    
-    module_name = ''
+    module_name, params, ports = detect_module(file_name)
 
-    # Find module name
-    find_module = False
-    for i in range(1000):
-        line = fp.readline()
-        words = SplitWord(line)
-        if len(words) != 0:
-            if words[0] == 'module':
-                tmp = []
-                for s in words[1]:
-                    if s != '(':
-                        tmp.append(s)
-                    else:
-                        break;
-                module_name = ''.join(tmp)        
-                find_module = True
-                break;
-        else:
-            pass
-    if not find_module:
-        print('Error, the file has no module in the first 1000 lines.')
-        sys.exit(1)
-   
-    over = False
-    for i in range(1000):
-        port = ModulePort()    
-        line = fp.readline()
-        words = SplitWord(line)
+    # print
+    if args.print_port:
+        for param in params:
+            param.print_info()
+        for port in ports:
+            port.print_info()
 
-        if over:
-            break
+    inst = generate_inst(module_name, params, ports, fill=args.fill_port, tab_num=args.tab_num)
 
-        # ignore blank lines
-        if len(words) == 0:
-            continue
-
-        # save all note, include ahead 'Tab' 
-        if words[0][0] == '/':
-            port.note = line[0:-1]
-            ports.append(port)
-            continue
-        
-        # When find ')', dectect is over
-        for word in words:
-            if '//' in word:
-                break
-            if ')' in word:
-                over = True
-
-        if (words[0] == 'input') or (words[0] == 'output'):
-            port.direct = words[0]
-            for word in words[1:]:
-                if word == 'signed':
-                    port.sign = 'signed'
-                elif ':' in word:
-                    left = []
-                    right = []
-                    flag = True
-                    for s in word:
-                        if (s != '[') and (s != ':') and flag: 
-                            left.append(s)
-                        elif s == '[':
-                            pass
-                        elif s == ':':
-                            flag = False
-                        elif s != ']':
-                            right.append(s)
-                        else:
-                            break
-                    port.length = abs(int(''.join(left)) - int(''.join(right))) + 1
-                elif 'reg' in word:
-                    port.net = 'reg'
-                elif 'wire' in word:
-                    port.net = 'wire'
-                else:
-                    tmp = []
-                    for s in word:
-                        if (s != ',') and (s != ')'):
-                            tmp.append(s)
-                        else:
-                            break
-                    port.name = ''.join(tmp)
-                    break
-            ports.append(port)
-
-    if not over:
-        print('Error, the file has no module end in the first 1000 lines.')
-
-    fp.close()
-
-
-    # write string
-    fw_str = ''
-
-    fw_str = fw_str + module_name + ' ' + module_name + '_inst(\n'
-    tab_len = args.length
-
-    for i in range(len(ports)):
-        if len(ports[-1-i].note) == 0:
-            last_port_name = ports[-1-i].name
-            break
-
-    for port in ports:
-        # It is just a comment.
-        if len(port.note) != 0:
-            fw_str = fw_str + port.note + '\n'
-        else:
-            fw_str = fw_str + '\t' + '.' + port.name
-            # alignment
-            tab_num = tab_len - (len(port.name) + 1)//4
-            for i in range(tab_num):
-                fw_str = fw_str + '\t'
-            
-            # also instance port
-            if args.port:
-                fw_str = fw_str + '(' + port.name
-                for i in range(tab_num):
-                    fw_str = fw_str + '\t'
-            else:
-                fw_str = fw_str + '('
-                for i in range(tab_len):
-                    fw_str = fw_str + '\t'
-
-            # last port
-            if port.name == last_port_name:
-                fw_str = fw_str + ')'
-            else:
-                fw_str = fw_str + '),'
-
-            #add comment
-            fw_str = fw_str + '\t' + '// ' + port.direct[0] + ' ' + str(port.length) + 'b' + '\n'
-
-    # last line
-    fw_str = fw_str + ');'
-
-    print(fw_str)
-
-    # Write a instance file
-    new_file_name = file_name[0:-2] + '_inst' + file_name[-2:]
-    if args.file:
-        fw = open(new_file_name, 'w') 
-        fw.write("// This is a instance file generated by scripy file 'InstModule'.\n")
-        fw.write(fw_str)
-        fw.close()
+    print(inst)
