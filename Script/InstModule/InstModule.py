@@ -170,7 +170,7 @@ def detect_module(file_name):
 
     for param_string in param_strings:
         param = ModuleParam()
-        splits = re.split(r"[= ]*", param_string)
+        splits = re.split(r"[= ]+", param_string)
         param.name = splits[0]
         param.value = splits[1]
         params.append(param)
