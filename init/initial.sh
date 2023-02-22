@@ -23,7 +23,6 @@ mkdir Script
 
 # 建立仿真文件夹 VCS
 mkdir VCS
-touch ./VCS/asic.f
 cp ../init/Makefile ./VCS
 
 # 建立综合文件夹 Syn
